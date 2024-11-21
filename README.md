@@ -13,13 +13,14 @@ I do this assignment on my own
   * `xz -cd ../patch-6.12.1.xz | patch -p1`
 - Then, I go back outside and cd into folder `linux`. Then run `make mconfig`. The console should appear, enable virtualization.
 - Run `make` and `make modules`.
-- To install it, run `sudo make install`
+- To install it, run `sudo make install`.
 
 ### Step 2:
 I navigated to `arch/x86/kvm/vmx/vmx.c` and modified the code.
 
 ### Step 3:
 - Pull the modified Github repo again, reconfigured and installed as Step 1.
+- Use Cloud Interconnect to set up ip address for the VM and use it to access the host.
 
 ## Question 3:
 - The frequency of exists is relatively low as the VM is idle. But for VM in operation, the frequency of exists will vary case by case.
