@@ -6509,7 +6509,9 @@ void dump_vmcs(struct kvm_vcpu *vcpu)
  *  EXIT_REASON_NOTIFY              75
  */
 
-static unsigned long long kvm_exit_counter[256] = {0};
+static const int MY_MAX_EXIT_CODE = 256;
+
+static unsigned long long kvm_exit_counter[MY_MAX_EXIT_CODE] = {0};
 static unsigned long long total_kvm_exit = 0;
 
 static const char *human_readable_exit(int reason) {
@@ -6601,7 +6603,7 @@ static int __vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 	kvm_exit_counter[exit_type]++;
 
 	if (total_kvm_exit % 10000 == 0) {
-		for (int i = 0; i < 40; i++) {
+		for (int i = 0; i < MY_MAX_EXIT_CODE; i++) {
 			if (kvm_exit_counter[i] > 0) {
 				printk(KERN_INFO "Message: %s (%d) occurred %llu times.\n",
 							human_readable_exit(i), i, kvm_exit_counter[i])
