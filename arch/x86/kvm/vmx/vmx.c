@@ -6606,7 +6606,7 @@ static int __vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 		for (int i = 0; i < MY_MAX_EXIT_CODE; i++) {
 			if (kvm_exit_counter[i] > 0) {
 				printk(KERN_INFO "Message: %s (%d) occurred %llu times.\n",
-							human_readable_exit(i), i, kvm_exit_counter[i])
+							human_readable_exit(i), i, kvm_exit_counter[i]);
 			}
 		}
 	}
