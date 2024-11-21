@@ -6444,6 +6444,142 @@ void dump_vmcs(struct kvm_vcpu *vcpu)
 	}
 }
 
+/* All types of exit:
+ *  EXIT_REASON_EXCEPTION_NMI       0
+ *  EXIT_REASON_EXTERNAL_INTERRUPT  1
+ *  EXIT_REASON_TRIPLE_FAULT        2
+ *  EXIT_REASON_INIT_SIGNAL					3
+ *  EXIT_REASON_SIPI_SIGNAL         4
+ *  EXIT_REASON_INTERRUPT_WINDOW    7
+ *  EXIT_REASON_NMI_WINDOW          8
+ *  EXIT_REASON_TASK_SWITCH         9
+ *  EXIT_REASON_CPUID               10
+ *  EXIT_REASON_HLT                 12
+ *  EXIT_REASON_INVD                13
+ *  EXIT_REASON_INVLPG              14
+ *  EXIT_REASON_RDPMC               15
+ *  EXIT_REASON_RDTSC               16
+ *  EXIT_REASON_VMCALL              18
+ *  EXIT_REASON_VMCLEAR             19
+ *  EXIT_REASON_VMLAUNCH            20
+ *  EXIT_REASON_VMPTRLD             21
+ *  EXIT_REASON_VMPTRST             22
+ *  EXIT_REASON_VMREAD              23
+ *  EXIT_REASON_VMRESUME            24
+ *  EXIT_REASON_VMWRITE             25
+ *  EXIT_REASON_VMOFF               26
+ *  EXIT_REASON_VMON                27
+ *  EXIT_REASON_CR_ACCESS           28
+ *  EXIT_REASON_DR_ACCESS           29
+ *  EXIT_REASON_IO_INSTRUCTION      30
+ *  EXIT_REASON_MSR_READ            31
+ *  EXIT_REASON_MSR_WRITE           32
+ *  EXIT_REASON_INVALID_STATE       33
+ *  EXIT_REASON_MSR_LOAD_FAIL       34
+ *  EXIT_REASON_MWAIT_INSTRUCTION   36
+ *  EXIT_REASON_MONITOR_TRAP_FLAG   37
+ *  EXIT_REASON_MONITOR_INSTRUCTION 39
+ *  EXIT_REASON_PAUSE_INSTRUCTION   40
+ *  EXIT_REASON_MCE_DURING_VMENTRY  41
+ *  EXIT_REASON_TPR_BELOW_THRESHOLD 43
+ *  EXIT_REASON_APIC_ACCESS         44
+ *  EXIT_REASON_EOI_INDUCED         45
+ *  EXIT_REASON_GDTR_IDTR           46
+ *  EXIT_REASON_LDTR_TR             47
+ *  EXIT_REASON_EPT_VIOLATION       48
+ *  EXIT_REASON_EPT_MISCONFIG       49
+ *  EXIT_REASON_INVEPT              50
+ *  EXIT_REASON_RDTSCP              51
+ *  EXIT_REASON_PREEMPTION_TIMER    52
+ *  EXIT_REASON_INVVPID             53
+ *  EXIT_REASON_WBINVD              54
+ *  EXIT_REASON_XSETBV              55
+ *  EXIT_REASON_APIC_WRITE          56
+ *  EXIT_REASON_RDRAND              57
+ *  EXIT_REASON_INVPCID             58
+ *  EXIT_REASON_VMFUNC              59
+ *  EXIT_REASON_ENCLS               60
+ *  EXIT_REASON_RDSEED              61
+ *  EXIT_REASON_PML_FULL            62
+ *  EXIT_REASON_XSAVES              63
+ *  EXIT_REASON_XRSTORS             64
+ *  EXIT_REASON_UMWAIT              67
+ *  EXIT_REASON_TPAUSE              68
+ *  EXIT_REASON_BUS_LOCK            74
+ *  EXIT_REASON_NOTIFY              75
+ */
+
+static unsigned long long kvm_exit_counter[76] = {0};
+static unsigned long long total_kvm_exit = 0;
+
+static const char *human_readable_exit(int reason) {
+	switch (reason) {
+		case EXIT_REASON_EXCEPTION_NMI: return "EXIT_REASON_EXCEPTION_NMI";
+		case EXIT_REASON_EXTERNAL_INTERRUPT: return "EXIT_REASON_EXTERNAL_INTERRUPT";
+		case EXIT_REASON_TRIPLE_FAULT: return "EXIT_REASON_TRIPLE_FAULT";
+		case EXIT_REASON_INIT_SIGNAL: return "EXIT_REASON_INIT_SIGNAL";
+		case EXIT_REASON_SIPI_SIGNAL: return "EXIT_REASON_SIPI_SIGNAL";
+		case EXIT_REASON_INTERRUPT_WINDOW: return "EXIT_REASON_INTERRUPT_WINDOW";
+		case EXIT_REASON_NMI_WINDOW: return "EXIT_REASON_NMI_WINDOW";
+		case EXIT_REASON_TASK_SWITCH: return "EXIT_REASON_TASK_SWITCH";
+		case EXIT_REASON_CPUID: return "EXIT_REASON_CPUID";
+		case EXIT_REASON_HLT: return "EXIT_REASON_HLT";
+		case EXIT_REASON_INVD: return "EXIT_REASON_INVD";
+		case EXIT_REASON_INVLPG: return "EXIT_REASON_INVLPG";
+		case EXIT_REASON_RDPMC: return "EXIT_REASON_RDPMC";
+		case EXIT_REASON_RDTSC: return "EXIT_REASON_RDTSC";
+		case EXIT_REASON_VMCALL: return "EXIT_REASON_VMCALL";
+		case EXIT_REASON_VMCLEAR: return "EXIT_REASON_VMCLEAR";
+		case EXIT_REASON_VMLAUNCH: return "EXIT_REASON_VMLAUNCH";
+		case EXIT_REASON_VMPTRLD: return "EXIT_REASON_VMPTRLD";
+		case EXIT_REASON_VMPTRST: return "EXIT_REASON_VMPTRST";
+		case EXIT_REASON_VMREAD: return "EXIT_REASON_VMREAD";
+		case EXIT_REASON_VMRESUME: return "EXIT_REASON_VMRESUME";
+		case EXIT_REASON_VMWRITE: return "EXIT_REASON_VMWRITE";
+		case EXIT_REASON_VMOFF: return "EXIT_REASON_VMOFF";
+		case EXIT_REASON_VMON: return "EXIT_REASON_VMON";
+		case EXIT_REASON_CR_ACCESS: return "EXIT_REASON_CR_ACCESS";
+		case EXIT_REASON_DR_ACCESS: return "EXIT_REASON_DR_ACCESS";
+		case EXIT_REASON_IO_INSTRUCTION: return "EXIT_REASON_IO_INSTRUCTION";
+		case EXIT_REASON_MSR_READ: return "EXIT_REASON_MSR_READ";
+		case EXIT_REASON_MSR_WRITE: return "EXIT_REASON_MSR_WRITE";
+		case EXIT_REASON_INVALID_STATE: return "EXIT_REASON_INVALID_STATE";
+		case EXIT_REASON_MSR_LOAD_FAIL: return "EXIT_REASON_MSR_LOAD_FAIL";
+		case EXIT_REASON_MWAIT_INSTRUCTION: return "EXIT_REASON_MWAIT_INSTRUCTION";
+		case EXIT_REASON_MONITOR_TRAP_FLAG: return "EXIT_REASON_MONITOR_TRAP_FLAG";
+		case EXIT_REASON_MONITOR_INSTRUCTION: return "EXIT_REASON_MONITOR_INSTRUCTION";
+		case EXIT_REASON_PAUSE_INSTRUCTION: return "EXIT_REASON_PAUSE_INSTRUCTION";
+		case EXIT_REASON_MCE_DURING_VMENTRY: return "EXIT_REASON_MCE_DURING_VMENTRY";
+		case EXIT_REASON_TPR_BELOW_THRESHOLD: return "EXIT_REASON_TPR_BELOW_THRESHOLD";
+		case EXIT_REASON_APIC_ACCESS: return "EXIT_REASON_APIC_ACCESS";
+		case EXIT_REASON_EOI_INDUCED: return "EXIT_REASON_EOI_INDUCED";
+		case EXIT_REASON_GDTR_IDTR: return "EXIT_REASON_GDTR_IDTR";
+		case EXIT_REASON_LDTR_TR: return "EXIT_REASON_LDTR_TR";
+		case EXIT_REASON_EPT_VIOLATION: return "EXIT_REASON_EPT_VIOLATION";
+		case EXIT_REASON_EPT_MISCONFIG: return "EXIT_REASON_EPT_MISCONFIG";
+		case EXIT_REASON_INVEPT: return "EXIT_REASON_INVEPT";
+		case EXIT_REASON_RDTSCP: return "EXIT_REASON_RDTSCP";
+		case EXIT_REASON_PREEMPTION_TIMER: return "EXIT_REASON_PREEMPTION_TIMER";
+		case EXIT_REASON_INVVPID: return "EXIT_REASON_INVVPID";
+		case EXIT_REASON_WBINVD: return "EXIT_REASON_WBINVD";
+		case EXIT_REASON_XSETBV: return "EXIT_REASON_XSETBV";
+		case EXIT_REASON_APIC_WRITE: return "EXIT_REASON_APIC_WRITE";
+		case EXIT_REASON_RDRAND: return "EXIT_REASON_RDRAND";
+		case EXIT_REASON_INVPCID: return "EXIT_REASON_INVPCID";
+		case EXIT_REASON_VMFUNC: return "EXIT_REASON_VMFUNC";
+		case EXIT_REASON_ENCLS: return "EXIT_REASON_ENCLS";
+		case EXIT_REASON_RDSEED: return "EXIT_REASON_RDSEED";
+		case EXIT_REASON_PML_FULL: return "EXIT_REASON_PML_FULL";
+		case EXIT_REASON_XSAVES: return "EXIT_REASON_XSAVES";
+		case EXIT_REASON_XRSTORS: return "EXIT_REASON_XRSTORS";
+		case EXIT_REASON_UMWAIT: return "EXIT_REASON_UMWAIT";
+		case EXIT_REASON_TPAUSE: return "EXIT_REASON_TPAUSE";
+		case EXIT_REASON_BUS_LOCK: return "EXIT_REASON_BUS_LOCK";
+		case EXIT_REASON_NOTIFY: return "EXIT_REASON_NOTIFY";
+		default: return "EXIT_REASON_UNKNOWN";
+	}
+}
+
 /*
  * The guest has exited.  See if we can fix it or if we need userspace
  * assistance.
@@ -6454,6 +6590,24 @@ static int __vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 	union vmx_exit_reason exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
 	u16 exit_handler_index;
+
+
+
+	/* 
+	 * Add exit counter and notify for every 10,000 total exits.
+	 */
+	total_kvm_exit++;
+	int exit_type = exit_reason.basic;
+	kvm_exit_counter[exit_type]++;
+
+	if (total_kvm_exit % 10000 == 0) {
+		for (int i = 0; i < 40; i++) {
+			if (kvm_exit_counter[i] > 0) {
+				printk(KERN_INFO "Message: %s (%d) occurred %llu times.\n",
+							human_readable_exit(i), i, kvm_exit_counter[i])
+			}
+		}
+	}
 
 	/*
 	 * Flush logged GPAs PML buffer, this will make dirty_bitmap more
