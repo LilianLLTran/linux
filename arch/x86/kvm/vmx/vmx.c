@@ -6448,7 +6448,7 @@ void dump_vmcs(struct kvm_vcpu *vcpu)
  *  EXIT_REASON_EXCEPTION_NMI       0
  *  EXIT_REASON_EXTERNAL_INTERRUPT  1
  *  EXIT_REASON_TRIPLE_FAULT        2
- *  EXIT_REASON_INIT_SIGNAL					3
+ *  EXIT_REASON_INIT_SIGNAL         3
  *  EXIT_REASON_SIPI_SIGNAL         4
  *  EXIT_REASON_INTERRUPT_WINDOW    7
  *  EXIT_REASON_NMI_WINDOW          8
@@ -6509,7 +6509,7 @@ void dump_vmcs(struct kvm_vcpu *vcpu)
  *  EXIT_REASON_NOTIFY              75
  */
 
-static unsigned long long kvm_exit_counter[76] = {0};
+static unsigned long long kvm_exit_counter[256] = {0};
 static unsigned long long total_kvm_exit = 0;
 
 static const char *human_readable_exit(int reason) {
